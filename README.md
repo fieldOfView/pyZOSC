@@ -10,3 +10,8 @@ the node when an OSC message is received with a new address/path.
 Capability values from ZOCP are sent out the a connected OSC
 server, with the address/path name mirroring the ZOCP capability
 (prefixed with ´/' if necessary).
+
+pyOSC
+=====
+
+Includes pyOSC 0.3.6
