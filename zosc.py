@@ -140,7 +140,13 @@ class OSCTransceiver:
                     (stuff, typehint) = message[1]
                     osc_message.setAddress(addr)
                     osc_message.append([stuff])
-                    self.client.send(osc_message)
+                    if self.client:
+                        try:
+                            self.client.send(osc_message, 1)
+                        except:
+                            print("Could not send message to OSC server")
+                            self.client.close()
+                            self.client = None
 
         if self.client:
             self.client.close()
