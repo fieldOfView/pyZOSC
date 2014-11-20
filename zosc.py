@@ -97,8 +97,10 @@ class OscBridgeNode(ZOCP):
 
                 if not addr in self.capability:
                     # add ZOCP capability for each path
-                    if tags == 'f':
+                    if tags == 'f' or tags == 'd':
                         self.register_float(addr, 0, 'rw')
+                    elif tags == 'i':
+                        self.register_int(addr, 0, 'rw')
                     else:
                         self.register_string(addr, "", 'rw')
                 self.emit_signal(addr, stuff[0])
