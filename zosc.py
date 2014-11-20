@@ -145,15 +145,9 @@ class OSCTransceiver:
         print("Connect client to %s:%s" %(address, port))
         if not self.client is None:
             self.client.close()
-        self.clientAddress = address
-        self.clientPort = port
 
-        self.clientThread = Thread( target = self.connectClient )
-        self.clientThread.start()
-
-    def connectClient(self):
         self.client = OSC.OSCClient()
-        self.client.connect((self.clientAddress, self.clientPort))
+        self.client.connect((address, port))
 
     def initServer(self, address, port):
         print("Start server on %s:%s" %(address, port))
