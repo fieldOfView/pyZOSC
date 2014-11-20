@@ -142,6 +142,12 @@ class OSCTransceiver:
                     osc_message.append([stuff])
                     self.client.send(osc_message)
 
+        if self.client:
+            self.client.close()
+            self.client = None
+        if self.server:
+            self.server.close()
+            self.server = None
         print("OSCTransceiver stopped")
 
 
