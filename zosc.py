@@ -13,8 +13,7 @@ import OSC
 
 class OscBridgeNode(ZOCP):
     # Constructor
-    def __init__(self, nodename = "", to_osc = None, from_osc = None):
-        self.nodename = nodename
+    def __init__(self, to_osc = None, from_osc = None):
         self.to_osc = to_osc
         self.from_osc = from_osc
 
@@ -27,7 +26,6 @@ class OscBridgeNode(ZOCP):
 
 
     def run(self):
-        self.set_name(self.nodename)
         self.register_string("Receive ip", self.receive_ip, 'rw')
         self.register_int("Receive port", self.receive_port, 'rw')
         self.register_string("Send ip", self.send_ip, 'rw')
@@ -144,7 +142,7 @@ class OSCTransceiver:
         print("OSCTransceiver stopped")
 
     def initClient(self, address, port):
-        print("Start client on %s:%s" %(address, port))
+        print("Connect client to %s:%s" %(address, port))
         if not self.client is None:
             self.client.close()
         self.clientAddress = address
@@ -178,7 +176,8 @@ if __name__ == '__main__':
     to_osc = queue.Queue()
     from_osc = queue.Queue()
 
-    z = OscBridgeNode("zosc_brigde@%s" % socket.gethostname(), to_osc, from_osc)
+    z = OscBridgeNode(to_osc, from_osc)
+    z.set_name("zosc_brigde@%s" % socket.gethostname())
 
     loop_thread = Thread(target = z.from_osc_loop)
     loop_thread.start()
