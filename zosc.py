@@ -72,7 +72,9 @@ class OscBridgeNode(ZOCP):
                 self.send_port = new_value
                 reinit_send = True
         else:
+            # any other capability is mirrored to OSC
             if key[0] != '/':
+                # make sure the capability name looks like an OSC path
                 key = '/' + key
             to_osc.put([key, (new_value, self.capability[key]['typeHint']) ])   
 
@@ -116,8 +118,10 @@ class OSCTransceiver:
         self.server = None
         pass
 
+
     def stop(self):
         self.running = False
+
 
     def run(self):
         self.running = True
@@ -126,22 +130,22 @@ class OSCTransceiver:
                 message = self.to_osc.get()
                 if message[0]=='__init_receive__':
                     (address, port) = message[1]
-                    self.initServer(address, port)
+                    self.init_server(address, port)
                 elif message[0]=='__init_send__':
                     (address, port) = message[1]
-                    self.initClient(address, port)
+                    self.init_client(address, port)
                 else:
-                    msg = OSC.OSCMessage()
+                    osc_message = OSC.OSCMessage()
                     addr = message[0]
                     (stuff, typehint) = message[1]
-                    msg.setAddress(addr)
-                    msg.append([stuff])
-                    print(msg)
-                    self.client.send(msg)
+                    osc_message.setAddress(addr)
+                    osc_message.append([stuff])
+                    self.client.send(osc_message)
 
         print("OSCTransceiver stopped")
 
-    def initClient(self, address, port):
+
+    def init_client(self, address, port):
         print("Connect client to %s:%s" %(address, port))
         if not self.client is None:
             self.client.close()
@@ -149,20 +153,21 @@ class OSCTransceiver:
         self.client = OSC.OSCClient()
         self.client.connect((address, port))
 
-    def initServer(self, address, port):
+
+    def init_server(self, address, port):
         print("Start server on %s:%s" %(address, port))
         if not self.server is None:
             self.server.close()
 
         self.server = OSC.OSCServer((address, port))
-        self.server.addMsgHandler("default", self.messageHandler)
+        self.server.addMsgHandler("default", self.message_handler)
         self.serverThread = Thread( target = self.server.serve_forever )
         self.serverThread.start()
 
-    # define a message-handler function for the server to call.
-    def messageHandler(self, addr, tags, stuff, source):
-        self.from_osc.put([addr, (stuff,tags)])
 
+    def message_handler(self, addr, tags, stuff, source):
+        # forward all incoming OSC messages to the ZOCP node
+        self.from_osc.put([addr, (stuff,tags)])
 
 
 
