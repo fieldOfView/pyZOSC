@@ -1,11 +1,7 @@
 #!/usr/bin/python3
 
-import sys
-import time
 import socket
-import signal
 from threading import Thread
-import queue
 
 from zocp import ZOCP
 import OSC
@@ -13,9 +9,9 @@ import OSC
 
 class OscBridgeNode(ZOCP):
     # Constructor
-    def __init__(self, to_osc = None, from_osc = None):
-        self.to_osc = to_osc
-        self.from_osc = from_osc
+    def __init__(self):
+        self.client = None
+        self.server = None
 
         self.receive_ip = "0.0.0.0"
         self.receive_port = 1234
@@ -31,10 +27,16 @@ class OscBridgeNode(ZOCP):
         self.register_string("Send ip", self.send_ip, 'rw')
         self.register_int("Send port", self.send_port, 'rw')
 
-        to_osc.put(['__init_receive__', (self.receive_ip, self.receive_port)])
-        to_osc.put(['__init_send__', (self.send_ip, self.send_port)])
+        self.init_server(self.receive_ip, self.receive_port)
+        self.init_client(self.send_ip, self.send_port)
 
         super().run()
+
+        # Close down OSC after ZOCP has stopped running
+        if self.client:
+            self.client.close()
+        if self.server:
+            self.server.close()
 
 
     def on_modified(self, data, peer=None):
@@ -76,138 +78,69 @@ class OscBridgeNode(ZOCP):
             if key[0] != '/':
                 # make sure the capability name looks like an OSC path
                 key = '/' + key
-            to_osc.put([key, (new_value, self.capability[key]['typeHint']) ])   
+            self.send_message(key, [new_value])
 
         if reinit_receive:
-            to_osc.put(['__init_receive__', (self.receive_ip, self.receive_port)])
+            self.init_server(self.receive_ip, self.receive_port)
+
         elif reinit_send:
-            to_osc.put(['__init_send__', (self.send_ip, self.send_port)])
-
-
-    def from_osc_loop(self):
-        self._osc_loop = True
-        while self._osc_loop:
-            while not self.from_osc.empty():
-                message = self.from_osc.get()
-                addr = message[0]
-                (stuff, tags) = message[1]
-                # ignore messages without data
-                if not (type(stuff) is list and len(stuff)>0):
-                    continue
-
-                if not addr in self.capability:
-                    # add ZOCP capability for each path
-                    if tags == 'f' or tags == 'd':
-                        self.register_float(addr, 0, 'rw')
-                    elif tags == 'i':
-                        self.register_int(addr, 0, 'rw')
-                    else:
-                        self.register_string(addr, "", 'rw')
-                self.emit_signal(addr, stuff[0])
-        print("From OSC Loop stopped")
-
-    def stop_from_osc_loop(self):
-        self._osc_loop = False
-
-
-
-class OSCTransceiver:
-    # Constructor
-    def __init__(self, to_osc, from_osc):
-        self.to_osc = to_osc
-        self.from_osc = from_osc
-        self.client = None
-        self.server = None
-        pass
-
-
-    def stop(self):
-        self.running = False
-
-
-    def run(self):
-        self.running = True
-        while self.running:
-            while not self.to_osc.empty():
-                message = self.to_osc.get()
-                if message[0]=='__init_receive__':
-                    (address, port) = message[1]
-                    self.init_server(address, port)
-                elif message[0]=='__init_send__':
-                    (address, port) = message[1]
-                    self.init_client(address, port)
-                else:
-                    osc_message = OSC.OSCMessage()
-                    addr = message[0]
-                    (stuff, typehint) = message[1]
-                    osc_message.setAddress(addr)
-                    osc_message.append([stuff])
-                    if self.client:
-                        try:
-                            self.client.send(osc_message, 1)
-                        except:
-                            print("Could not send message to OSC server")
-                            self.client.close()
-                            self.client = None
-
-        if self.client:
-            self.client.close()
-            self.client = None
-        if self.server:
-            self.server.close()
-            self.server = None
-        print("OSCTransceiver stopped")
+            self.init_client(self.send_ip, self.send_port)
 
 
     def init_client(self, address, port):
-        print("Connect client to %s:%s" %(address, port))
-        if not self.client is None:
+        if self.client is not None:
             self.client.close()
 
+        print("Connect client to %s:%s" %(address, port))
         self.client = OSC.OSCClient()
         self.client.connect((address, port))
 
 
     def init_server(self, address, port):
-        print("Start server on %s:%s" %(address, port))
-        if not self.server is None:
+        if self.server is not None:
             self.server.close()
 
+        print("Start server on %s:%s" %(address, port))
         self.server = OSC.OSCServer((address, port))
         self.server.addMsgHandler("default", self.message_handler)
-        self.serverThread = Thread( target = self.server.serve_forever )
-        self.serverThread.start()
+        serverThread = Thread( target = self.server.serve_forever )
+        serverThread.start()
+
+
+    def send_message(self, addr, stuff):
+        osc_message = OSC.OSCMessage()
+        osc_message.setAddress(addr)
+        osc_message.append(stuff)
+        if self.client:
+            try:
+                self.client.send(osc_message, 1)
+            except:
+                print("Could not send message to OSC server")
+                self.client.close()
+                self.client = None
 
 
     def message_handler(self, addr, tags, stuff, source):
-        # forward all incoming OSC messages to the ZOCP node
-        self.from_osc.put([addr, (stuff,tags)])
+        if not (type(stuff) is list and len(stuff)>0):
+            # ignore messages without data
+            return
+
+        if not addr in self.capability:
+            # add ZOCP capability for each path
+            if tags == 'f' or tags == 'd':
+                self.register_float(addr, 0, 'rw')
+            elif tags == 'i':
+                self.register_int(addr, 0, 'rw')
+            else:
+                self.register_string(addr, "", 'rw')
+
+        self.emit_signal(addr, stuff[0])
 
 
 
 if __name__ == '__main__':
-    to_osc = queue.Queue()
-    from_osc = queue.Queue()
-
-    z = OscBridgeNode(to_osc, from_osc)
+    z = OscBridgeNode()
     z.set_name("zosc_brigde@%s" % socket.gethostname())
-
-    loop_thread = Thread(target = z.from_osc_loop)
-    loop_thread.start()
-
-    o = OSCTransceiver(to_osc, from_osc)
-    o_thread = Thread(target = o.run)
-    o_thread.start()
-
-    # Add SIGINT handler for killing the threads
-    def signal_handler(signal, frame):
-        print ("Caught Ctrl+C, shutting down...")
-        o.stop()
-        z.stop_from_osc_loop()
-
-        sys.exit()
-
-    signal.signal(signal.SIGINT, signal_handler)
 
     z.run()
     print("ZOCP Stopped")
