@@ -16,8 +16,8 @@ pyOSC
 -----
 
 Includes pyOSC 0.3.6
-Copyright (c) Daniel Holth & Clinton McChesney. (SimpleOSC)
-Copyright (c) 2008-2010, Artem Baguinski <artm@v2.nl> et al., Stock, V2_Lab, Rotterdam, Netherlands.
+Copyright (c) Daniel Holth & Clinton McChesney. (SimpleOSC)  
+Copyright (c) 2008-2010, Artem Baguinski <artm@v2.nl> et al., Stock, V2_Lab, Rotterdam, Netherlands.  
 Copyright (c) 2010 Uli Franke <uli.franke@weiss.ch>, Weiss Engineering, Uster, Switzerland.
 
 
@@ -41,16 +41,24 @@ Now you should be able to use ZOCP as before, but you will notice
 some new examples in the examples folder. If you want to go back
 to the "normal" version of ZOCP without my changes, do the
 following:
-```> git checkout master```
+```
+> git checkout master
+```
 
 If you previously used pip to install ZOCP, upgrade to my special
 branch like so:
-```> sudo pip3 install -- upgrade https://github.com/fieldOfView/pyZOCP/archive/feature_subscribe.zip```
+```
+> sudo pip3 install -- upgrade https://github.com/fieldOfView/pyZOCP/archive/feature_subscribe.zip
+```
 Switching back to the normal ZOCP is done as follows:
-```> sudo pip3 install -- upgrade https://github.com/z25/pyZOCP/archive/master.zip```
+```
+> sudo pip3 install -- upgrade https://github.com/z25/pyZOCP/archive/master.zip
+```
 
 Next, clone pyZOSC somewhere:
+```
 > git clone https://github.com/fieldOfView/pyZOSC.git
+```
 Or just download it here:
 https://github.com/fieldOfView/pyZOSC/archive/master.zip
 
@@ -76,3 +84,4 @@ Now send some OSC data. You should see a new capability
 appear on the ZOSC node, reflecting the data. If you use urwid
 to change one of those values, the new value will be sent to
 the OSC address/port specified.
+
