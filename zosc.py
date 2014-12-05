@@ -128,11 +128,11 @@ class OscBridgeNode(ZOCP):
         if not addr in self.capability:
             # add ZOCP capability for each path
             if tags == 'f' or tags == 'd':
-                self.register_float(addr, 0, 'rw')
+                self.register_float(addr, 0, 'rwes')
             elif tags == 'i':
-                self.register_int(addr, 0, 'rw')
+                self.register_int(addr, 0, 'rwes')
             else:
-                self.register_string(addr, "", 'rw')
+                self.register_string(addr, "", 'rwes')
 
         self.emit_signal(addr, stuff[0])
 
@@ -142,5 +142,6 @@ if __name__ == '__main__':
     z = OscBridgeNode()
     z.set_name("zosc_brigde@%s" % socket.gethostname())
 
+    z.start()
     z.run()
     print("ZOCP Stopped")
