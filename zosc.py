@@ -39,7 +39,7 @@ class OscBridgeNode(ZOCP):
             self.server.close()
 
 
-    def on_modified(self, data, peer, name, data, *args, **kwargs):
+    def on_modified(self, peer, name, data, *args, **kwargs):
         if self._running and peer:
             for key in data:
                 if 'value' in data[key]:
