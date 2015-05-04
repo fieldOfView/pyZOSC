@@ -104,6 +104,7 @@ class OscBridgeNode(ZOCP):
         self.server = OSC.OSCServer((address, port))
         self.server.addMsgHandler("default", self.message_handler)
         serverThread = Thread( target = self.server.serve_forever )
+        serverThread.setDaemon(True)
         serverThread.start()
 
 
