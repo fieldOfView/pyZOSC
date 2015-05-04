@@ -129,12 +129,26 @@ class OscBridgeNode(ZOCP):
             # add ZOCP capability for each path
             if tags == 'f' or tags == 'd':
                 self.register_float(addr, 0, 'rwes')
+            elif tags == 'ff' or tags == 'dd':
+                self.register_vec2f(addr, [0,0], 'rwes')
+            elif tags == 'fff' or tags == 'ddd':
+                self.register_vec3f(addr, [0,0,0], 'rwes')
+            elif tags == 'ffff' or tags == 'dddd':
+                self.register_vec4f(addr, [0,0,0,0], 'rwes')
+
             elif tags == 'i':
                 self.register_int(addr, 0, 'rwes')
             else:
                 self.register_string(addr, "", 'rwes')
 
-        self.emit_signal(addr, stuff[0])
+        type_hint = self.capability[addr]['typeHint']
+
+        if type_hint.startswith("vec"):
+            data = stuff
+        else:
+            data = stuff[0]
+
+        self.emit_signal(addr, data)
 
 
 
