@@ -78,7 +78,15 @@ class OscBridgeNode(ZOCP):
             if key[0] != '/':
                 # make sure the capability name looks like an OSC path
                 key = '/' + key
-            self.send_message(key, [new_value])
+
+            type_hint = self.capability[key]['typeHint']
+            if type_hint.startswith("vec"):
+                stuff = new_value
+            else
+                stuff = [new_value]
+
+            self.send_message(key, stuff)
+
 
         if reinit_receive:
             self.init_server(self.receive_ip, self.receive_port)
