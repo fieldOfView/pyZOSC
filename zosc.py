@@ -18,7 +18,7 @@ class OscBridgeNode(ZOCP):
         self.send_ip = "127.0.0.1"
         self.send_port = 1235
 
-        super().__init__()
+        super(OscBridgeNode, self).__init__()
 
 
     def run(self):
@@ -30,7 +30,7 @@ class OscBridgeNode(ZOCP):
         self.init_server(self.receive_ip, self.receive_port)
         self.init_client(self.send_ip, self.send_port)
 
-        super().run()
+        super(OscBridgeNode, self).run()
 
         # Close down OSC after ZOCP has stopped running
         if self.client:
@@ -82,7 +82,7 @@ class OscBridgeNode(ZOCP):
             type_hint = self.capability[key]['typeHint']
             if type_hint.startswith("vec"):
                 stuff = new_value
-            else
+            else:
                 stuff = [new_value]
 
             self.send_message(key, stuff)
