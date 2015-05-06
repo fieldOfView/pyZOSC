@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 import socket
-from threading import Thread
 
+import zmq
 from zocp import ZOCP
 import OSC
 
@@ -27,16 +27,29 @@ class OscBridgeNode(ZOCP):
         self.register_string("Send ip", self.send_ip, 'rw')
         self.register_int("Send port", self.send_port, 'rw')
 
+        self.zpoller = zmq.Poller()
+        self.zpoller.register(self.inbox, zmq.POLLIN)
+
         self.init_server(self.receive_ip, self.receive_port)
         self.init_client(self.send_ip, self.send_port)
 
-        super(OscBridgeNode, self).run()
+        while True:
+            try:
+                items = dict(self.zpoller.poll())
+                if self.inbox in items and items[self.inbox] == zmq.POLLIN:
+                    self.get_message()
+                if self.server.socket.fileno() in items and items[self.server.socket.fileno()] == zmq.POLLIN:
+                    self.server.handle_request()
+            except (KeyboardInterrupt, SystemExit):
+                break
 
         # Close down OSC after ZOCP has stopped running
         if self.client:
             self.client.close()
         if self.server:
+            self.zpoller.unregister(self.server.socket)
             self.server.close()
+        self.zpoller.unregister(z.inbox)
 
 
     def on_modified(self, peer, name, data, *args, **kwargs):
@@ -108,14 +121,13 @@ class OscBridgeNode(ZOCP):
 
     def init_server(self, address, port):
         if self.server is not None:
+            self.zpoller.unregister(self.server.socket)
             self.server.close()
 
         print("Start server on %s:%s" %(address, port))
         self.server = OSC.OSCServer((address, port))
         self.server.addMsgHandler("default", self.message_handler)
-        serverThread = Thread( target = self.server.serve_forever )
-        serverThread.setDaemon(True)
-        serverThread.start()
+        self.zpoller.register(self.server.socket, zmq.POLLIN)
 
 
     def send_message(self, addr, stuff):
@@ -169,4 +181,6 @@ if __name__ == '__main__':
 
     z.start()
     z.run()
+    z.stop()
+    z = None
     print("ZOCP Stopped")
