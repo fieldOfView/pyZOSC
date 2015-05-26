@@ -9,7 +9,9 @@ import OSC
 
 class OscBridgeNode(ZOCP):
     # Constructor
-    def __init__(self):
+    def __init__(self, nodename):
+        super(OscBridgeNode, self).__init__(nodename)
+
         self.client = None
         self.server = None
 
@@ -18,10 +20,8 @@ class OscBridgeNode(ZOCP):
         self.send_ip = "127.0.0.1"
         self.send_port = 1235
 
-        super(OscBridgeNode, self).__init__()
+        self.start()
 
-
-    def run(self):
         self.register_string("Receive ip", self.receive_ip, 'rw')
         self.register_int("Receive port", self.receive_port, 'rw')
         self.register_string("Send ip", self.send_ip, 'rw')
@@ -43,13 +43,15 @@ class OscBridgeNode(ZOCP):
             except (KeyboardInterrupt, SystemExit):
                 break
 
-        # Close down OSC after ZOCP has stopped running
+        # Close down OSC after loop stopped running
         if self.client:
             self.client.close()
         if self.server:
             self.zpoller.unregister(self.server.socket)
             self.server.close()
-        self.zpoller.unregister(z.inbox)
+
+        self.zpoller.unregister(self.inbox)
+        self.stop()
 
 
     def on_modified(self, peer, name, data, *args, **kwargs):
@@ -176,11 +178,7 @@ class OscBridgeNode(ZOCP):
 
 
 if __name__ == '__main__':
-    z = OscBridgeNode()
-    z.set_name("zosc_brigde@%s" % socket.gethostname())
+    z = OscBridgeNode("zosc_brigde@%s" % socket.gethostname())
+    del z
 
-    z.start()
-    z.run()
-    z.stop()
-    z = None
     print("ZOCP Stopped")
