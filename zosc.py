@@ -20,8 +20,8 @@ class OscBridgeNode(ZOCP):
         self.send_ip = "127.0.0.1"
         self.send_port = 1235
 
-        self.start()
 
+    def run(self):
         self.register_string("Receive ip", self.receive_ip, 'rw')
         self.register_int("Receive port", self.receive_port, 'rw')
         self.register_string("Send ip", self.send_ip, 'rw')
@@ -51,7 +51,6 @@ class OscBridgeNode(ZOCP):
             self.server.close()
 
         self.zpoller.unregister(self.inbox)
-        self.stop()
 
 
     def on_modified(self, peer, name, data, *args, **kwargs):
@@ -179,6 +178,9 @@ class OscBridgeNode(ZOCP):
 
 if __name__ == '__main__':
     z = OscBridgeNode("zosc_brigde@%s" % socket.gethostname())
+    z.start()
+    z.run()
+    z.stop()
     del z
 
     print("ZOCP Stopped")
